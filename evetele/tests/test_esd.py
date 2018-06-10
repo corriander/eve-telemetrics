@@ -58,6 +58,22 @@ class TestDatabase(unittest.TestCase):
         )
         self.assertIs(value, mock_connection)
 
+    @mock.patch('evetele.esd.Database.db',
+                new_callable=mock.PropertyMock)
+    def test_default_cursor_factory(self, mock_property):
+        """Property handles setting connection's cursor factory.
+
+        The setter assigns the new value to the internal attribute on
+        the class and the `cursor_factory` attribute of the connection
+        stored in the `db` property.
+        """
+        database = esd.Database()
+        database.default_cursor_factory = 'foo'
+
+        self.assertEqual(database.default_cursor_factory, 'foo')
+        self.assertEqual(mock_property.return_value.cursor_factory,
+                         'foo')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,6 +3,7 @@
 Database adapter and models for working with the Eve Static Data
 Export.
 """
+import getpass
 
 import psycopg2
 import psycopg2.extras
@@ -14,7 +15,7 @@ class Database(object):
 
     _pw_prompt = "Password for [{user}@{host}:{port}/{database}]: "
 
-    default_cursor_factory = psycopg2.extras.NamedTupleCursor
+    _default_cursor_factory = psycopg2.extras.NamedTupleCursor
 
     @property
     def conn_details(self):
@@ -35,3 +36,12 @@ class Database(object):
             )
             connection.set_session(autocommit=True, readonly=True)
             return connection
+
+    @property
+    def default_cursor_factory(self):
+        """Defines the default type of cursor returned by a query."""
+        return self._default_cursor_factory
+    @default_cursor_factory.setter
+    def default_cursor_factory(self, value):
+        self._default_cursor_factory = value
+        self.db.cursor_factory = value
