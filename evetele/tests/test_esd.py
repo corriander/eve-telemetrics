@@ -60,7 +60,7 @@ class TestDatabase(unittest.TestCase):
 
     @mock.patch('evetele.esd.Database.db',
                 new_callable=mock.PropertyMock)
-    def test_default_cursor_factory(self, mock_property):
+    def test_default_cursor_factory(self, stub_property):
         """Property handles setting connection's cursor factory.
 
         The setter assigns the new value to the internal attribute on
@@ -71,8 +71,28 @@ class TestDatabase(unittest.TestCase):
         database.default_cursor_factory = 'foo'
 
         self.assertEqual(database.default_cursor_factory, 'foo')
-        self.assertEqual(mock_property.return_value.cursor_factory,
+        self.assertEqual(stub_property.return_value.cursor_factory,
                          'foo')
+
+    @mock.patch('evetele.esd.Database.db',
+                new_callable=mock.PropertyMock)
+    def test_query(self, stub_property):
+        """Method wraps psycopg2's DBAPI compatible execute method."""
+        database = esd.Database()
+
+        # Reference the mock connection and expected execute args
+        mock_connection = stub_property.return_value
+        args, kwargs = ('sql statement', 'foo'), dict(kw='bar')
+
+        # Invoke
+        cursor = database.query(*args, cursor_factory='baz', **kwargs)
+
+        # Check the connection/cursor is used properly.
+        mock_connection.cursor.assert_called_once_with(
+            cursor_factory='baz'
+        )
+        self.assertIs(cursor, mock_connection.cursor.return_value)
+        cursor.execute.assert_called_once_with(*args, **kwargs)
 
 
 if __name__ == '__main__':

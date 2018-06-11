@@ -45,3 +45,29 @@ class Database(object):
     def default_cursor_factory(self, value):
         self._default_cursor_factory = value
         self.db.cursor_factory = value
+
+    def query(self, *args, cursor_factory=None, **kwargs):
+        """Execute a SQL query against the ESD database instance.
+
+        Parameters
+        ----------
+
+        cursor_factory : psycopg2.extensions.cursor, optional
+            Specify a specific or custom cursor factory, e.g.
+            `DictCursor` or `NamedTupleCursor`. By default this is
+            the value of the `default_cursor_factory` class property.
+
+        All other positional and keyword args are passed directly to
+        `psycopg2.extensions.cursor.execute`.
+
+        Returns
+        -------
+
+        psycopg2.extensions.cursor
+            A newly instantiated cursor for the resultset. Strictly
+            the type is a subclass of `cursor` defined by the
+            `default_cursor_factory` property.
+        """
+        cursor = self.db.cursor(cursor_factory=cursor_factory)
+        cursor.execute(*args, **kwargs)
+        return cursor
