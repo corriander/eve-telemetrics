@@ -41,3 +41,17 @@ class EveStaticData(object):
                     'name': record.system_name
                 }
             return regions
+
+    @property
+    def systems(self):
+        """Metadata for solar systems."""
+        try:
+            return self._systems
+
+        except AttributeError:
+            self._systems = systems = {}
+            for region_id, region_dict in self.regions.items():
+                for system_id, system_dict in (
+                        region_dict['systems'].items()):
+                    systems[system_dict['id']] = system_dict
+            return systems

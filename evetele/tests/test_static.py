@@ -7,6 +7,16 @@ from evetele import static
 
 class TestEveStaticData(unittest.TestCase):
 
+    sample_region_dict = {
+        1001: {'id': 1001, 'name': 'Region1', 'systems': {
+            3001: {'id': 3001, 'name': 'SystemA'},
+            3002: {'id': 3002, 'name': 'SystemB'}}},
+        1002: {'id': 1002, 'name': 'Region2', 'systems': {
+            3003: {'id': 3003, 'name': 'SystemC'}}},
+        1003: {'id': 1003, 'name': 'Region3', 'systems': {
+            3004: {'id': 3004, 'name': 'SystemD'}}}
+    }
+
     def setUp(self):
         static.EveStaticData.db = self.mock_dbobject = mock.Mock()
         self.mock_cursor = self.mock_dbobject.query.return_value
@@ -38,15 +48,24 @@ class TestEveStaticData(unittest.TestCase):
 
         esd = static.EveStaticData()
 
+        self.assertEqual(esd.regions, self.sample_region_dict)
+
+    @mock.patch('evetele.static.EveStaticData.regions',
+                new_callable=mock.PropertyMock)
+    def test_systems(self, stub_property):
+        """Property is a map of system IDs to system data dicts."""
+        stub_property.return_value = self.sample_region_dict
+
+        esd = static.EveStaticData()
+
         self.assertEqual(
-            esd.regions,
-            {1001: {'id': 1001, 'name': 'Region1', 'systems': {
+            esd.systems,
+            {
                 3001: {'id': 3001, 'name': 'SystemA'},
-                3002: {'id': 3002, 'name': 'SystemB'}}},
-             1002: {'id': 1002, 'name': 'Region2', 'systems': {
-                3003: {'id': 3003, 'name': 'SystemC'}}},
-             1003: {'id': 1003, 'name': 'Region3', 'systems': {
-                3004: {'id': 3004, 'name': 'SystemD'}}}}
+                3002: {'id': 3002, 'name': 'SystemB'},
+                3003: {'id': 3003, 'name': 'SystemC'},
+                3004: {'id': 3004, 'name': 'SystemD'}
+            }
         )
 
 
