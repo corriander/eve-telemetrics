@@ -3,7 +3,7 @@ import unittest
 from unittest import mock
 
 import evetele
-from evetele import esd
+from evetele import db
 
 
 class TestDatabase(unittest.TestCase):
@@ -22,26 +22,26 @@ class TestDatabase(unittest.TestCase):
         The connection details are sourced from the config file(s)
         located in the usual app dirs (dependent on OS).
         """
-        database = esd.Database()
+        database = db.Database()
         self.assertEqual(database.conn_details['host'], 'localhost')
 
     @mock.patch('psycopg2.connect')
-    def test_db(self, stub_connect):
+    def test_conn(self, stub_connect):
         """Property lazily instantiates a connection object.
 
         After creating a connection, the session is set to readonly
         and autocommit to avoid issues with hanging transactions (only
         SELECT is used; we don't want to modify the static data).
 
-        Note: the db property also prompts for a password on creating
-        a new connection if it hasn't been provided in the config but
-        this isn't tested here.
+        Note: the conn property also prompts for a password on
+        creating a new connection if it hasn't been provided in the
+        config but this isn't tested here.
         """
-        database = esd.Database()
+        database = db.Database()
 
         self.assertFalse(stub_connect.called)
 
-        value = database.db
+        value = database.conn
 
         # Check the DBAPI has been invoked correctly
         expected_parameters = {
@@ -58,27 +58,27 @@ class TestDatabase(unittest.TestCase):
         )
         self.assertIs(value, mock_connection)
 
-    @mock.patch('evetele.esd.Database.db',
+    @mock.patch('evetele.db.Database.conn',
                 new_callable=mock.PropertyMock)
     def test_default_cursor_factory(self, stub_property):
         """Property handles setting connection's cursor factory.
 
         The setter assigns the new value to the internal attribute on
         the class and the `cursor_factory` attribute of the connection
-        stored in the `db` property.
+        stored in the `conn` property.
         """
-        database = esd.Database()
+        database = db.Database()
         database.default_cursor_factory = 'foo'
 
         self.assertEqual(database.default_cursor_factory, 'foo')
         self.assertEqual(stub_property.return_value.cursor_factory,
                          'foo')
 
-    @mock.patch('evetele.esd.Database.db',
+    @mock.patch('evetele.db.Database.conn',
                 new_callable=mock.PropertyMock)
     def test_query(self, stub_property):
         """Method wraps psycopg2's DBAPI compatible execute method."""
-        database = esd.Database()
+        database = db.Database()
 
         # Reference the mock connection and expected execute args
         mock_connection = stub_property.return_value
@@ -94,7 +94,7 @@ class TestDatabase(unittest.TestCase):
         self.assertIs(cursor, mock_connection.cursor.return_value)
         cursor.execute.assert_called_once_with(*args, **kwargs)
 
-    @mock.patch('evetele.esd.Database.query')
+    @mock.patch('evetele.db.Database.query')
     def test_schema(self, stub_query):
         """Property is a dict of tables and columns."""
         mock_cursor = stub_query.return_value
@@ -105,14 +105,14 @@ class TestDatabase(unittest.TestCase):
             ('table2', 'columnD', 2),
         ]
 
-        database = esd.Database()
+        database = db.Database()
         self.assertEqual(
             database.schema,
             {'table1': ['columnA', 'columnB'],
              'table2': ['columnC', 'columnD']}
         )
 
-    @mock.patch('evetele.esd.Database.schema',
+    @mock.patch('evetele.db.Database.schema',
                 new_callable=mock.PropertyMock)
     def test_tables(self, stub_property):
         """Property is a list of tables taken from the schema dict."""
@@ -121,7 +121,7 @@ class TestDatabase(unittest.TestCase):
             'table2': ['columnC', 'columnD'],
         }
         stub_property.return_value = dummy_schema
-        database = esd.Database()
+        database = db.Database()
 
         self.assertCountEqual(database.tables, dummy_schema.keys())
 
