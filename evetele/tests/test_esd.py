@@ -94,6 +94,37 @@ class TestDatabase(unittest.TestCase):
         self.assertIs(cursor, mock_connection.cursor.return_value)
         cursor.execute.assert_called_once_with(*args, **kwargs)
 
+    @mock.patch('evetele.esd.Database.query')
+    def test_schema(self, stub_query):
+        """Property is a dict of tables and columns."""
+        mock_cursor = stub_query.return_value
+        mock_cursor.fetchall.return_value = [
+            ('table1', 'columnA', 1),
+            ('table1', 'columnB', 2),
+            ('table2', 'columnC', 1),
+            ('table2', 'columnD', 2),
+        ]
+
+        database = esd.Database()
+        self.assertEqual(
+            database.schema,
+            {'table1': ['columnA', 'columnB'],
+             'table2': ['columnC', 'columnD']}
+        )
+
+    @mock.patch('evetele.esd.Database.schema',
+                new_callable=mock.PropertyMock)
+    def test_tables(self, stub_property):
+        """Property is a list of tables taken from the schema dict."""
+        dummy_schema = {
+            'table1': ['columnA', 'columnB'],
+            'table2': ['columnC', 'columnD'],
+        }
+        stub_property.return_value = dummy_schema
+        database = esd.Database()
+
+        self.assertCountEqual(database.tables, dummy_schema.keys())
+
 
 if __name__ == '__main__':
     unittest.main()

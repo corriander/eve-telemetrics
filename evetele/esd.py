@@ -3,6 +3,7 @@
 Database adapter and models for working with the Eve Static Data
 Export.
 """
+import collections
 import getpass
 
 import psycopg2
@@ -46,8 +47,31 @@ class Database(object):
         self._default_cursor_factory = value
         self.db.cursor_factory = value
 
+    @property
+    def schema(self):
+        """Dictionary describing the public schema."""
+        cursor = self.query(
+             """
+            SELECT table_name
+                 , column_name
+                 , ordinal_position
+              FROM information_schema.columns
+             WHERE table_schema = 'public'
+             ORDER BY (table_name, ordinal_position)
+            """
+        )
+        schema = collections.defaultdict(list)
+        for table_name, column_name, __ in cursor.fetchall():
+            schema[table_name].append(column_name)
+        return schema
+
+    @property
+    def tables(self):
+        """List of tables in the public schema."""
+        return list(self.schema.keys())
+
     def query(self, *args, cursor_factory=None, **kwargs):
-        """Execute a SQL query against the ESD database instance.
+        """Execute a SQL query against the database.
 
         Parameters
         ----------
@@ -58,7 +82,9 @@ class Database(object):
             the value of the `default_cursor_factory` class property.
 
         All other positional and keyword args are passed directly to
-        `psycopg2.extensions.cursor.execute`.
+        `psycopg2.extensions.cursor.execute`. These are likely to be a
+        parameterised statement string and its arguments, but could
+        include anything else the `execute` method supports.
 
         Returns
         -------
