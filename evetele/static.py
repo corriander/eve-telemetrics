@@ -20,27 +20,60 @@ class EveStaticData(object):
             cursor = self.db.query(
                 """
                 SELECT regions."regionID" AS region_id
-                     , "regionName" AS region_name
-                     , "solarSystemID" AS system_id
-                     , "solarSystemName" AS system_name
+                     , regions."regionName" AS region_name
+                     , systems."solarSystemID" AS system_id
+                     , systems."solarSystemName" AS system_name
+                     , stations."stationID" AS station_id
+                     , stations."stationName" AS station_name
                   FROM "mapRegions" as regions
                   JOIN "mapSolarSystems" as systems
                     ON systems."regionID" = regions."regionID"
+                  LEFT JOIN "staStations" as stations
+                    ON stations."solarSystemID" =
+                          systems."solarSystemID"
                 """
             )
             self._regions = regions = {}
             for record in cursor.fetchall():
+                # Get or create the dict for this record's region
                 region_dict = regions.setdefault(
                     record.region_id,
                     {'id': record.region_id,
-                     'name': record.region_name}
+                     'name': record.region_name,
+                     'systems': {}}
                 )
-                system_dict = region_dict.setdefault('systems', {})
-                system_dict[record.system_id] = {
-                    'id': record.system_id,
-                    'name': record.system_name
-                }
+
+                # Get or create the dict for this record's system
+                system_dict = region_dict['systems'].setdefault(
+                    record.system_id,
+                    {'id': record.system_id,
+                     'name': record.system_name,
+                     'stations': {}}
+                )
+
+                # If this record includes a station, add it to the
+                # system's stations dict.
+                if record.station_id is not None:
+                    system_dict['stations'][record.station_id] = {
+                        'id': record.station_id,
+                        'name': record.station_name
+                    }
+
             return regions
+
+    @property
+    def stations(self):
+        """Metadata for stations."""
+        try:
+            return self._stations
+
+        except AttributeError:
+            self._stations = stations = {}
+            for system_id, system_dict in self.systems.items():
+                for station_id, station_dict in (
+                        system_dict['stations'].items()):
+                    stations[station_id] = station_dict
+            return stations
 
     @property
     def systems(self):
