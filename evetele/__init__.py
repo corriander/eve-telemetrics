@@ -4,7 +4,11 @@ import os
 import appdirs
 
 
+__version__ = '0.x.0'
+
+
 APP_NAME = 'evetele'
+HUMAN_APP_NAME = 'EVE Telemetrics'
 SITE_CONFIG_DIR = appdirs.site_config_dir(appname=APP_NAME)
 LOCAL_CONFIG_DIR = os.path.join(os.path.dirname(__file__), '..',
                                 'config')
