@@ -30,6 +30,25 @@ class TestEveStaticData(unittest.TestCase):
         static.EveStaticData.db = self.mock_dbobject = mock.Mock()
         self.mock_cursor = self.mock_dbobject.query.return_value
 
+    def test_market_types(self):
+        """Property provides a lookup capability for market items.
+
+        Generally we're dealing with IDs and want human-readable
+        information.
+        """
+        DummyRecord = collections.namedtuple('Record', 'id, name')
+        self.mock_cursor.fetchall.return_value = [
+            DummyRecord(123, 'A thing'),
+            DummyRecord(321, 'Another thing')
+        ]
+
+        esd = static.EveStaticData()
+        self.assertEqual(
+            esd.market_types,
+            {123: {'id': 123, 'name': 'A thing'},
+             321: {'id': 321, 'name': 'Another thing'}}
+        )
+
     def test_regions(self):
         """Property is a map of region IDs to region data dicts.
 
@@ -76,8 +95,28 @@ class TestEveStaticData(unittest.TestCase):
             {6001: {'id': 6001, 'name': 'StationA'}}
         )
 
-    #@mock.patch('evetele.static.EveStaticData._fetch_trade_hubs')
-    #def test_trade_hubs(self
+    @mock.patch('evetele.static.EveStaticData.stations',
+                new_callable=mock.PropertyMock)
+    @mock.patch('evetele.static.EveStaticData._trade_hub_ids')
+    def test_trade_hubs(self, mock_id_getter, mock_stations):
+        """Property is a list of trade hub metadata.
+
+        Trade hubs are set in config and retrieved via _trade_hub_ids.
+        """
+        mock_id_getter.return_value = 456, 654
+
+        mock_stations.return_value = {
+            456: {'id': 456, 'name': 'Mega Trade Hub'},
+            654: {'id': 654, 'name': 'Lesser Trade Hub'},
+            555: {'id': 555, 'name': 'Port Middle-of-Nowhere'}
+        }
+
+        esd = static.EveStaticData()
+        self.assertEqual(
+            esd.trade_hubs,
+            [{'id': 456, 'name': 'Mega Trade Hub'},
+             {'id': 654, 'name': 'Lesser Trade Hub'}]
+        )
 
 
 if __name__ == '__main__':

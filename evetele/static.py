@@ -56,6 +56,23 @@ class EveStaticData(object):
         return regions
 
     @cached_property
+    def market_types(self):
+        """Metadata for types that can be sold on the market."""
+        cursor = self.db.query(
+            """
+            SELECT "typeID" as id
+                 , "typeName" as name
+              FROM "invTypes"
+             WHERE "marketGroupID" IS NOT NULL
+            """
+        )
+
+        return {
+            rec.id: {attr: getattr(rec, attr) for attr in rec._fields}
+            for rec in cursor.fetchall()
+        }
+
+    @cached_property
     def stations(self):
         """Metadata for stations."""
         stations = {}
@@ -77,11 +94,15 @@ class EveStaticData(object):
 
     @cached_property
     def trade_hubs(self):
-        """Metadata for trade hub systems."""
+        """Metadata for trade hub stations."""
         return [
-            self.get_metadata('station', int(id_.strip()))
-            for id_ in config['Places']['trade hubs'].split(',')
+            self.get_metadata('station', id_)
+            for id_ in self._trade_hub_ids()
         ]
+
+    def _trade_hub_ids(self):
+        # Fetch trade hub ids from config and make sure they're ints
+        return map(int, config['Places']['trade hubs'].split(','))
 
     def get_metadata(self, entity, identifier):
         """Get supported metadata for the specified object.
