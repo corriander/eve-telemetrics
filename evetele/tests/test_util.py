@@ -18,10 +18,10 @@ class TestCachedProperty(unittest.TestCase):
                 return -1
         a = A()
 
-        self.assertTrue(not hasattr(a, '_x'))
+        self.assertTrue(not hasattr(a, A.x.iname))
         self.assertEqual(a.x, -1)
         mock_object.method.assert_called_once_with(fish='haddock')
-        self.assertTrue(hasattr(a, '_x'))
+        self.assertTrue(hasattr(a, A.x.iname))
         a.species = 'cod'
         a.x
         mock_object.method.assert_called_once_with(fish='haddock')

@@ -13,7 +13,8 @@ class TestESIClient(unittest.TestCase):
         # Mock out the esipy resources.
         cls.mock_operation = mock.Mock()
         client._get_op = mock.Mock(return_value=cls.mock_operation)
-        esi.ESIClient._client = cls.mock_client = mock.Mock()
+        cls.mock_client = mock.Mock()
+        setattr(client, type(client)._client.iname, cls.mock_client)
 
     def test_request(self):
         response = self.mock_client.request.return_value

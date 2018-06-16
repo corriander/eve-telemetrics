@@ -6,7 +6,7 @@ class cached_property(object):
         self.fget = fget
         self.__doc__ = fget.__doc__
         self.name = name = fget.__name__
-        self.iname = '_{}'.format(name)
+        self.iname = '_cached_{}'.format(name)
 
     def __get__(self, obj, objtype=None):
         if obj is None:

@@ -5,6 +5,7 @@ import itertools
 import esipy
 
 import evetele
+from .util import cached_property
 
 
 USER_AGENT_STRING = '{} {} ({})'.format(
@@ -31,18 +32,18 @@ class ESIClient(object):
             self.__app = esipy.EsiApp().get_latest_swagger
             return self.__app
 
-    @property
+    @cached_property
     def _client(self):
         # Lazily evaluated, cached esipy client instance
-        try:
-            return self.__client
-        except AttributeError:
-            self.__client = esipy.EsiClient(
-                retry_requests=True,
-                headers={'User-Agent': USER_AGENT_STRING},
-                raw_body_only=False # most of the time we'll parse
-            )
-            return self.__client
+        return esipy.EsiClient(
+            retry_requests=True,
+            headers=self.headers,
+            raw_body_only=False # most of the time we'll parse
+        )
+
+    @cached_property
+    def headers(self):
+        return {'User-Agent': USER_AGENT_STRING}
 
     def _get_op(self, endpoint):
         # De-couples the EsiApp instance from things that want an op,
