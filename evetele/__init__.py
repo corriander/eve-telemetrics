@@ -30,6 +30,10 @@ class CustomConfigParser(configparser.ConfigParser):
         self.config_paths = paths
         self.read(paths)
 
+    def refresh(self):
+        """Refresh the configuration from disk."""
+        self.read(self.config_paths)
+
 
 config = CustomConfigParser([
     os.path.join(path, 'config.ini')

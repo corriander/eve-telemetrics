@@ -3,7 +3,7 @@
 Communicates with a database via the `db` module to provide an adapter
 for querying a copy of the EVE SDE.
 """
-from . import db
+from . import db, config
 from .util import cached_property
 
 
@@ -74,3 +74,40 @@ class EveStaticData(object):
                     region_dict['systems'].items()):
                 systems[system_id] = system_dict
         return systems
+
+    @cached_property
+    def trade_hubs(self):
+        """Metadata for trade hub systems."""
+        return [
+            self.get_metadata('station', int(id_.strip()))
+            for id_ in config['Places']['trade hubs'].split(',')
+        ]
+
+    def get_metadata(self, entity, identifier):
+        """Get supported metadata for the specified object.
+
+        Parameters
+        ----------
+
+        entity : str in {'region', 'station', 'system'}
+            Entity to look up
+
+        identifier: int or str
+            Either the entity's ID or its name
+        """
+        try:
+            data = getattr(self, '{}s'.format(entity))
+        except AttributeError:
+            raise ValueError("Unknown entity '{}'".format(entity))
+
+        if isinstance(identifier, str):
+            for metadata in data.values():
+                if metadata['name'] == identifier:
+                    return metadata
+            else:
+                raise ValueError(
+                    "Unknown {} '{}'".format(entity, identifier)
+                )
+
+        else:
+            return data[identifier]
