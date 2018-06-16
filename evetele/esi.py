@@ -66,7 +66,7 @@ class ESIClient(object):
 
         pyswagger.io.Response
         """
-        operation = self._get_op()(**kwargs)
+        operation = self._get_op(endpoint)(**kwargs)
         return self._client.request(operation)
 
     def multipage_request(self, endpoint, **kwargs):

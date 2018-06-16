@@ -21,6 +21,7 @@ class TestESIClient(unittest.TestCase):
 
         retval = self.sut.request('an_endpoint', param=1)
 
+        self.sut._get_op.assert_called_with('an_endpoint')
         self.mock_client.request.called_once_with(self.mock_operation)
         self.assertIs(retval, response)
 
