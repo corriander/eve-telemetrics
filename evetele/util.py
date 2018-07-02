@@ -1,3 +1,8 @@
+import logging
+
+log = logging.getLogger(__name__)
+
+
 class cached_property(object):
     # It's probably more sophisticated to use lru_cache or similar a
     # la https://stackoverflow.com/a/33672499/8992969
@@ -17,3 +22,10 @@ class cached_property(object):
             value = self.fget(obj)
             setattr(obj, self.iname, value)
             return value
+
+
+def exception_logger(cls, inst, traceback):
+    # Log any unhandled exception.
+    log.exception(': '.join([cls.__name__, str(inst)]))
+    sys.__excepthook__(cls, inst, traceback)
+sys.excepthook = exception_logger

@@ -1,7 +1,10 @@
 import configparser
+import logging
 import os
 
 import appdirs
+
+from . import util # Initialise exception logger.
 
 
 __version__ = '0.x.0'
@@ -39,3 +42,37 @@ config = CustomConfigParser([
     os.path.join(path, 'config.ini')
     for path in [LOCAL_CONFIG_DIR, SITE_CONFIG_DIR, USER_CONFIG_DIR]
 ])
+
+
+class LoggingObject(object):
+
+    @property
+    def _log(self):
+        cls = self.__class__
+        try:
+            log = cls._shared_logger
+        except AttributeError:
+            logger_name = self._fq_class_name
+            log = cls._shared_logger = logging.getLogger(logger_name)
+        finally:
+            return log
+
+    @property
+    def _fq_class_name(self):
+        return '.'.join([self.__class__.__module__,
+                         self.__class__.__qualname__])
+
+
+# Configure root logger
+log = logging.getLogger()
+logging.basicConfig(
+    level=os.environ.get('EVETELE_LOGLEVEL', 'INFO'),
+    format=('[%(levelname).1s | %(asctime)s | %(name)30s] '
+            '%(message)s'),
+    filename=os.path.join(USER_DATA_DIR, 'main.log'),
+    filemode='w'
+)
+
+console = logging.StreamHandler()
+console.setLevel(logging.WARNING)
+log.addHandler(console)
