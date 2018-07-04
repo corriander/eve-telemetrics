@@ -1,0 +1,14 @@
+{
+    "duration": 90,
+    "is_buy_order": false,
+    "issued": "2018-06-21T19:59:50Z",
+    "location_id": 60005686,
+    "min_volume": 1,
+    "order_id": 5190055081,
+    "price": 2000000,
+    "range": "region",
+    "system_id": 30002053,
+    "type_id": 506,
+    "volume_remain": 2,
+    "volume_total": 2
+}
