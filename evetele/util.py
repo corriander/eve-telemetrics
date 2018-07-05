@@ -2,6 +2,7 @@ import collections
 import datetime
 import functools
 import logging
+import re
 import sys
 
 from dateutil import parser
@@ -129,3 +130,12 @@ def parse_epoch_timestamp(timestamp):
         us = 0
     converter = datetime.datetime.fromtimestamp
     return converter(s, pytz.UTC).replace(microsecond=us)
+
+
+def camelcase_to_snakecase(string):
+    """Convert a string in camelCase to snake_case."""
+    return re.sub(
+        r'((?<=[a-z0-9])[A-Z]|(?!^)[A-Z](?=[a-z]))',
+        r'_\1',
+        string
+    ).lower()
