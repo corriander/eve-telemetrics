@@ -84,6 +84,10 @@ class SimpleMarketOrder(LoggingObject):
         self._log.debug('Serialising data to json string.')
         return json.dumps(self.data)
 
+    @property
+    def order_id(self):
+        return self.data['order_id']
+
 
 class MarketOrderSnapshot(SimpleMarketOrder):
     """An extended market order model with a timestamp."""
@@ -113,3 +117,83 @@ class MarketOrderSnapshot(SimpleMarketOrder):
     def t(self):
         """Timestamp of data snapshot."""
         return self._t
+
+
+class VersionedMarketOrder(MarketOrderSnapshot):
+    """An extended market order model with a version history."""
+
+    def __init__(self, obj=None, t=None):
+        """Optionally initialise a new instance with a market order.
+
+        Any combination of arguments acceptable to `add` is allowed,
+        with the addition of omitting both parameters or specifying
+        them as null (in which case no snapshots will be present yet).
+        """
+        if any([obj, t]):
+            self.add(obj, t)
+
+    @classmethod
+    def from_snapshots(cls, snapshots):
+        """Build a VersionedMarketOrder from a sequence of snapshots.
+        """
+        assert len(set(order.order_id for order in snapshots)) == 1
+        snapshot_dict = {o.t.isoformat(): o for o in snapshots}
+        inst = cls()
+        inst.snapshots = snapshot_dict
+        return inst
+
+    @property
+    def data(self):
+        """The data dict of the latest snapshot/version of this order.
+        """
+        return self.latest.data
+
+    @property
+    def latest(self):
+        """The latest snapshot/version of this market order."""
+        return sorted(self.snapshots.items())[-1][1]
+
+    @property
+    def t(self):
+        """Timestamp of latest snapshot/version of this market order.
+        """
+        return self.latest.t
+
+    def _validate_order_id(self, other):
+        # Check that the order ID of other is consistent with self.
+        if other.order_id != self.order_id:
+            raise ValueError(
+                "Order ID of {} is not consistent with this "
+                "order ID ({})".format(other, self.order_id)
+            )
+
+    def add(self, obj, t=None):
+        """Add a snapshot/version to the order history.
+
+        Parameters
+        ----------
+
+        obj : SimpleMarketOrder or dict
+            Order data, or simpler representation.
+
+        t : datetime.datetime
+            Timestamp (if obj is MarketOrderSnapshot it will have one
+            already, and if this is provided it must be consistent).
+        """
+        if isinstance(obj, MarketOrderSnapshot):
+            snapshot = obj
+            if t is not None and obj.t != t:
+                raise ValueError("t provided but different to "
+                                 "the provided snapshot's t")
+            t = obj.t
+
+        elif isinstance(obj, (SimpleMarketOrder, dict)):
+            if t is None:
+                raise TypeError("t must be specified if a "
+                                "MarketOrderSnapshot isn't provided.")
+            snapshot = MarketOrderSnapshot(obj, t)
+
+        else:
+            raise TypeError("Unsupported parameter types.")
+        self._validate_order_id(snapshot)
+        self.snapshots[t.isoformat()] = snapshot

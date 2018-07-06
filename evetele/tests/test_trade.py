@@ -9,7 +9,8 @@ from unittest import mock
 import ddt
 import pyswagger
 
-from ..trade import SimpleMarketOrder, MarketOrderSnapshot
+from ..trade import (SimpleMarketOrder, MarketOrderSnapshot,
+                     VersionedMarketOrder)
 from ..util import parse_datetime, tdelta
 
 from . import DATA_DIR
@@ -259,6 +260,112 @@ class TestMarketOrderSnapshot(unittest.TestCase):
         else:
             sut = MarketOrderSnapshot(*args, **kwargs)
             self.assertEqual(sut.t, expected_t)
+
+
+@ddt.ddt
+class TestVersionedMarketOrder(unittest.TestCase):
+    """Exercises the market order extension with historical snapshots.
+    """
+
+    ts = (
+        parse_datetime('20180705215200+0000'),
+        parse_datetime('20180705204200+0000'),
+        parse_datetime('20180705214200+0000'),
+    )
+
+    def setUp(self):
+        self.snapshots = [
+            mock.Mock(
+                spec=MarketOrderSnapshot,
+                t=t,
+                order_id=1234
+            )
+            for t in self.ts
+        ]
+        self.sut = VersionedMarketOrder.from_snapshots(self.snapshots)
+
+    def test_snapshots__count(self):
+        """Property should contain all snapshots provided on init."""
+        self.assertEqual(len(self.sut.snapshots), 3)
+
+    def test_snapshots__type(self):
+        """The snapshots property value should be a dictionary.
+
+        The dict maps ISO datetime strings to MarketOrderSnapshot
+        instance.
+        """
+        self.assertIsInstance(self.sut.snapshots, dict)
+        iso_timestamp = '2018-07-05T20:42:00+00:00'
+        self.assertIn(iso_timestamp, self.sut.snapshots)
+        self.assertIs(self.sut.snapshots[iso_timestamp],
+                      self.snapshots[1])
+
+    def test_data(self):
+        """The instance's data property is the latest snapshot's.
+
+        The latest snapshot is the one with the latest timestamp.
+        """
+        self.assertEqual(self.sut.t, self.ts[0])
+
+    @mock_property(VersionedMarketOrder, 'order_id')
+    def test_add__dissimilar(self, stub_order_id):
+        """Adding a snapshot is only possible for the same order ID.
+        """
+        stub_order_id.return_value = 1234
+        self.assertRaises(
+            ValueError,
+            self.sut.add,
+            mock.Mock(
+                spec=MarketOrderSnapshot,
+                t=parse_datetime('20180705215300+0000'),
+                order_id=4321
+            )
+        )
+
+    @mock.patch.object(VersionedMarketOrder, '_validate_order_id')
+    def test_add__newer(self, mock_validator):
+        """Adding a newer snapshot will automatically be reflected.
+        """
+        snapshot_time = parse_datetime('20180705215300+0000')
+        self.sut.add(
+            mock.Mock(
+                spec=MarketOrderSnapshot,
+                t=snapshot_time,
+            )
+        )
+        self.assertEqual(self.sut.t, snapshot_time)
+
+    @mock.patch.object(VersionedMarketOrder, '_validate_order_id')
+    @ddt.data(
+        # 1. SimpleMarketOrder w/ timestamp is OK
+        {'obj': mock.Mock(spec=SimpleMarketOrder), 't': ts[0],
+         'error': None},
+        # 2. SimpleMarketOrder w/o timestamp is not OK.
+        {'obj': mock.Mock(spec=SimpleMarketOrder), 't': None,
+         'error': TypeError},
+        # 3. MarketOrderSnapshot w/o timestamp is OK
+        {'obj': mock.Mock(spec=MarketOrderSnapshot, t=ts[0]),
+         't': None, 'error': None},
+        # 4. MarketOrderSnapshot w/ matching timestamp is OK
+        {'obj': mock.Mock(spec=MarketOrderSnapshot, t=ts[0]),
+         't': ts[0], 'error': None},
+        # 5. MarketOrderSnapshot w/ inconsistent timestamp is not OK
+        {'obj': mock.Mock(spec=MarketOrderSnapshot, t=ts[0]), 't': 2,
+         'error': ValueError},
+        # 6. Data dict w/ a timestamp is OK
+        {'obj': {}, 't': ts[0], 'error': None},
+        # 7. Data dict w/o timestamp is not OK
+        {'obj': {}, 't': None, 'error': TypeError},
+    )
+    def test_add(self, kwargs, mock_validator):
+        """Method supports adding snapshots as various source types.
+        """
+        error = kwargs.pop('error')
+        if error:
+            self.assertRaises(error, self.sut.add, **kwargs)
+        else:
+            self.sut.add(**kwargs)
+        self.assertIn(self.ts[0].isoformat(), self.sut.snapshots)
 
 
 if __name__ == '__main__':

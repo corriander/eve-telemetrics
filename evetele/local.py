@@ -29,6 +29,7 @@ class MarketLogFile(LoggingObject):
             'name': 'issued',
             'cast': lambda s: s + 'Z' # Specify UTC
         },
+        'orderID': {'cast': int},
         'price': {'cast': Decimal},
         'regionID': {'cast': int},
         'solarSystemID': {

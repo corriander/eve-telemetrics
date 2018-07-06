@@ -49,6 +49,7 @@ class TestMarketLogFile(unittest.TestCase):
         self.assertEqual(order.data['issued'],
                          '2018-06-29 18:22:34.000Z') # TZ appended
         self.assertIsInstance(order.data['system_id'], int)
+        self.assertIsInstance(order.data['order_id'], int)
         self.assertIsInstance(order.data['is_buy_order'], bool)
 
 
