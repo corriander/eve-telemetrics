@@ -6,10 +6,10 @@ from . import util
 from . import LoggingObject
 
 
-class MarketOrder(LoggingObject):
+class SimpleMarketOrder(LoggingObject):
 
     def __init__(self, data):
-        """Initialise a MarketOrder from source data.
+        """Initialise a SimpleMarketOrder from source data.
 
         Parameters
         ----------
@@ -22,7 +22,7 @@ class MarketOrder(LoggingObject):
 
     @classmethod
     def from_json(cls, string):
-        """Create a MarketOrder from a JSON string.
+        """Create a SimpleMarketOrder from a JSON string.
 
         JSON is validated, but content is not; this class trusts valid
         market data is supplied. Note that the `json` property will
@@ -83,3 +83,33 @@ class MarketOrder(LoggingObject):
         """Serialised JSON string for the market order."""
         self._log.debug('Serialising data to json string.')
         return json.dumps(self.data)
+
+
+class MarketOrderSnapshot(SimpleMarketOrder):
+    """An extended market order model with a timestamp."""
+
+    def __init__(self, obj, t):
+        """
+        Parameters
+        ----------
+
+        obj : dict or SimpleMarketOrder
+            Market order data (either in raw, dict form or as a
+            SimpleMarketOrder). See SimpleMarketOrder for details
+            about the dict.
+
+        t : datetime.datetime
+            Timestamp for the snapshot. This is the time the order
+            data was collected/viewed/etc.
+        """
+        if isinstance(obj, SimpleMarketOrder):
+            data = obj.data
+        else:
+            data = obj
+        super().__init__(data=data)
+        self._t = t
+
+    @property
+    def t(self):
+        """Timestamp of data snapshot."""
+        return self._t

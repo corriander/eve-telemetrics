@@ -29,9 +29,9 @@ class TestMarketLogFile(unittest.TestCase):
         self.assertEqual(len(self.sut.orders), 2)
 
     def test_orders__type(self):
-        """Ensure both orders are stored as MarketOrder instances."""
-        self.assertIsInstance(self.sut.orders[0], trade.MarketOrder)
-        self.assertIsInstance(self.sut.orders[1], trade.MarketOrder)
+        """Ensure both orders are stored as SimpleMarketOrder instances."""
+        self.assertIsInstance(self.sut.orders[0], trade.SimpleMarketOrder)
+        self.assertIsInstance(self.sut.orders[1], trade.SimpleMarketOrder)
 
     def test_orders__metadata_fields(self):
         """Ensure fields are parsed correctly."""

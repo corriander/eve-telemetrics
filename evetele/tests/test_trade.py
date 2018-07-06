@@ -6,9 +6,10 @@ import os
 import unittest
 from unittest import mock
 
+import ddt
 import pyswagger
 
-from ..trade import MarketOrder
+from ..trade import SimpleMarketOrder, MarketOrderSnapshot
 from ..util import parse_datetime, tdelta
 
 from . import DATA_DIR
@@ -21,17 +22,17 @@ mock_property = functools.partial(
 )
 
 
-class TestMarketOrder(unittest.TestCase):
-    """Exercise the MarketOrder class.
+class TestSimpleMarketOrder(unittest.TestCase):
+    """Exercise the SimpleMarketOrder class.
 
-    The MarketOrder class is a wrapper around market order data,
+    The SimpleMarketOrder class is a wrapper around market order data,
     exposing those data elements that are used elsewhere in the
     codebase. Data describing Market Orders can come from multiple
     sources in multiple formats and differ slightly in its content and
     purpose, so part of the role of the wrapper is to provide a
     standardised API.
 
-    A MarketOrder is an important, base type this code so some
+    A SimpleMarketOrder is an important, base type this code so some
     flexibility has been built in. Instantiation must always involve
     some data (though it's somewhat trusting about the content!) but
     it can come in the form of a python dict, or a json_string.
@@ -46,7 +47,7 @@ class TestMarketOrder(unittest.TestCase):
         logging.disable(logging.NOTSET)
 
     def setUp(self):
-        self.sut = MarketOrder(data={})
+        self.sut = SimpleMarketOrder(data={})
 
     # ----------------------------------------------------------------
     # Constructors
@@ -54,13 +55,13 @@ class TestMarketOrder(unittest.TestCase):
     def test___init___data(self):
         """Data provided on init is available via the data property.
 
-        The MarketOrder class doesn't actually care what data is
+        The SimpleMarketOrder class doesn't actually care what data is
         provided, just that it is a valid dict. Erroneous data will
         become apparent quickly when trying to make use of it and this
         saves testing it.
         """
         data_dict = {'a': 'fish'}
-        sut = MarketOrder(data=data_dict)
+        sut = SimpleMarketOrder(data=data_dict)
         self.assertEqual(sut.data, data_dict)
 
     def test_from_json(self):
@@ -71,14 +72,14 @@ class TestMarketOrder(unittest.TestCase):
         side-effect (this is tested here).
         """
         json_string = '{"a": "fish"}'
-        sut = MarketOrder.from_json(string=json_string)
+        sut = SimpleMarketOrder.from_json(string=json_string)
         self.assertEqual(sut.data, {'a': 'fish'})
 
     # ----------------------------------------------------------------
     # Properties
     # ----------------------------------------------------------------
-    @mock_property(MarketOrder, 'issued')
-    @mock_property(MarketOrder, 'duration')
+    @mock_property(SimpleMarketOrder, 'issued')
+    @mock_property(SimpleMarketOrder, 'duration')
     def test_expiry(self, stub_duration, stub_issued):
         """Calculated from issue datetime and duration.
 
@@ -96,7 +97,7 @@ class TestMarketOrder(unittest.TestCase):
         expected = issued_date + tdelta(days=90)
         self.assertEqual(self.sut.expiry, expected)
 
-    @mock_property(MarketOrder, 'data')
+    @mock_property(SimpleMarketOrder, 'data')
     def test_issued(self, stub_data):
         """Alias for the data item.
 
@@ -116,22 +117,22 @@ class TestMarketOrder(unittest.TestCase):
     def test_json__derived_from_data(self):
         """When instantiated with data, JSON is derived."""
         data_dict = {'a': 'fish'}
-        sut = MarketOrder(data=data_dict)
+        sut = SimpleMarketOrder(data=data_dict)
         self.assertEqual(sut.json, '{"a": "fish"}')
 
     def test_json__via_from_json(self):
         """JSON used to instantiate is available as the JSON property.
         """
         json_string = '{"a":  "fish"}'
-        sut = MarketOrder.from_json(string=json_string)
+        sut = SimpleMarketOrder.from_json(string=json_string)
         self.assertEqual(sut.json, json_string)
 
     # ----------------------------------------------------------------
     # Magic Methods
     # ----------------------------------------------------------------
-    @mock_property(MarketOrder, 'data')
+    @mock_property(SimpleMarketOrder, 'data')
     def test___getitem__(self, stub_data):
-        """MarketOrder provides dict-like access to data."""
+        """SimpleMarketOrder provides dict-like access to data."""
         stub_data.return_value = {'a': 'fish'}
         self.assertEqual(self.sut['a'], 'fish')
 
@@ -141,7 +142,7 @@ class TestMarketOrder(unittest.TestCase):
     # Data may be sourced from the ESI API both raw and deserialised,
     # and other sources such as EveKit and log files.
     # ----------------------------------------------------------------
-    @mock_property(MarketOrder, 'data')
+    @mock_property(SimpleMarketOrder, 'data')
     def test_issued__raw_api_json(self, stub_data):
         """Check instantiation with unparsed JSON directly from ESI.
 
@@ -160,15 +161,15 @@ class TestMarketOrder(unittest.TestCase):
         self.assertEqual(self.sut.issued,
                          parse_datetime('20180529182234+0000'))
 
-    @mock_property(MarketOrder, 'data')
+    @mock_property(SimpleMarketOrder, 'data')
     def test_issued__pyswagger_dict(self, stub_data):
         """Check behaviour when built from pre-deserialised API data.
 
         esipy (or technically the underlying pyswagger library)
         returns data with timestamps as custom datetime primitives.
-        This is not the most helpful thing, but we expect MarketOrder
-        to handle this gracefully by normalising the type in the
-        issued property.
+        This is not the most helpful thing, but we expect
+        SimpleMarketOrder to handle this gracefully by normalising the
+        type in the issued property.
 
         Note that this can be worked around at the interface by
         choosing to receive raw data from the API rather than parsed
@@ -193,7 +194,7 @@ class TestMarketOrder(unittest.TestCase):
         self.assertIsInstance(self.sut.issued, datetime.datetime)
         self.assertEqual(self.sut.issued, expected)
 
-    @mock_property(MarketOrder, 'data')
+    @mock_property(SimpleMarketOrder, 'data')
     def test_issued__evekit_json(self, stub_data):
         """Check instantiation with unparsed JSON from EveKit.
 
@@ -204,7 +205,7 @@ class TestMarketOrder(unittest.TestCase):
         self.assertEqual(self.sut.issued,
                          parse_datetime('20180529182234'))
 
-    @mock_property(MarketOrder, 'data')
+    @mock_property(SimpleMarketOrder, 'data')
     def test_is_buy_order__raw_api_json__wallet_sell_order(self,
                                                            stub_data):
         """Check the field value is inferred.
@@ -216,7 +217,7 @@ class TestMarketOrder(unittest.TestCase):
         stub_data.return_value = {}
         self.assertFalse(self.sut.is_buy_order)
 
-    @mock_property(MarketOrder, 'data')
+    @mock_property(SimpleMarketOrder, 'data')
     def test__all_implemented_fields__raw_api_json(self, stub_data):
         """Given a native ESI JSON string, checks field properties.
 
@@ -233,6 +234,31 @@ class TestMarketOrder(unittest.TestCase):
         self.assertEqual(self.sut.issued,
                          parse_datetime('20180621195950+0000'))
 
+
+
+@ddt.ddt
+class TestMarketOrderSnapshot(unittest.TestCase):
+    """Exercises the timestamp-annotated market order type."""
+
+    t = parse_datetime('20180705204200+0000')
+
+    @ddt.data(
+        [(), {'obj': {}, 't': t}, t, None],
+        [(),
+         {'obj': mock.Mock(spec=SimpleMarketOrder, data={}), 't': t},
+         t,
+         None],
+        [(), {'obj': {}}, None, TypeError],
+    )
+    @ddt.unpack
+    def test___init__(self, args, kwargs, expected_t, error):
+        """init is similar to SimpleMarketOrder but includes time."""
+        if error is not None:
+            self.assertRaises(error, MarketOrderSnapshot, *args,
+                              **kwargs)
+        else:
+            sut = MarketOrderSnapshot(*args, **kwargs)
+            self.assertEqual(sut.t, expected_t)
 
 
 if __name__ == '__main__':

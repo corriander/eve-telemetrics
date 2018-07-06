@@ -74,7 +74,7 @@ class MarketLogFile(LoggingObject):
                     )
                     cast = mapping.get('cast', lambda v: v)
                     data[transformed_name] = cast(value)
-                orders.append(trade.MarketOrder(data))
+                orders.append(trade.SimpleMarketOrder(data))
 
     @property
     def orders(self):
