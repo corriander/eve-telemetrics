@@ -1,4 +1,5 @@
 """Models for working with the EVE API, ESI."""
+import abc
 import functools
 import itertools
 
@@ -132,6 +133,64 @@ class ESIClient(object):
 
         else:
             raise self.BadResponse(response)
+
+
+class ESIClientWrapper(metaclass=abc.ABCMeta):
+    """Provides a method for fetching data from an ESI API endpoint.
+
+    Concrete implementations must provide a `_client_class` property
+    which dictates the ESIClient class for the wrapped client. Default
+    behaviour for init provides a mechanism for providing an existing
+    client instance.
+    """
+
+    def __init__(self, client=None):
+        """Optionally provide an ESI client on initialisation.
+
+        Parameters
+        ----------
+
+        client : evetele.esi.ESIClient, optional
+            An existing ESI client instance.
+        """
+        if client is not None:
+            if not isinstance(client, self._client_class):
+                raise TypeError(
+                    "`client` init argument must be an instance of "
+                    "{}.".format(self._client_class.__name__)
+                )
+                self._client = client
+
+    @abc.abstractproperty
+    def _client_class(self):
+        return ESIClient
+
+    @cached_property
+    def _client(self):
+        return self._client_class()
+
+    def fetch(self, endpoint, **kwargs):
+        """Fetch data from an endpoint.
+
+        Parameters
+        ----------
+
+        endpoint : str
+            ESI Swagger endpoint identifier.
+
+        Any API endpoint parameters must be provided as keyword
+        arguments.
+
+        Notes
+        -----
+
+        The client type dictates which ESI endpoints will be
+        accessible. For endpoints requiring authorisation, a
+        secure ESI client instance must be used (e.g.
+        `SecureESIClient`) and this concrete implementation must be
+        configured to use that type via `_client_class`.
+        """
+        return self._client.fetch(endpoint, **kwargs)
 
 
 def operation_is_multipage(op):

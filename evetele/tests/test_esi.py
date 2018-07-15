@@ -107,6 +107,52 @@ class TestESIClient(unittest.TestCase):
         self.assertIs(retval, response)
 
 
+class TestESIClientWrapper(unittest.TestCase):
+    """This test suite exercises a simple concrete implementation."""
+
+    @classmethod
+    def setUpClass(cls):
+        class ConcreteClass(esi.ESIClientWrapper):
+            _client_class = esi.ESIClient
+        cls.concrete_class = ConcreteClass
+        cls.sut = ConcreteClass()
+
+    @mock.patch.object(esi.ESIClient, 'fetch')
+    def test_fetch(self, mock_wrapped_method):
+        """Wraps the client fetch method properly."""
+        args, kwargs = ('an_endpoint',), dict(param=1)
+        retval = self.sut.fetch(*args, **kwargs)
+        mock_wrapped_method.assert_called_with(*args, **kwargs)
+        self.assertIs(retval, mock_wrapped_method.return_value)
+
+    def test__provided___init___behaviour__correct_client(self):
+        """Wrapper provides default init behaviour to accept a client.
+
+        As long as the client is the same class as defined in
+        _client_class, it'll be used (saving the need to instantiate
+        multiple client objects).
+        """
+        try:
+            self.concrete_class(client=mock.Mock(spec=esi.ESIClient))
+        except:
+            raise AssertionError(
+                "Failed to instantiate a concrete ESIClientWrapper "
+                "with an appropriate client."
+            )
+
+    def test__provided___init___behaviour__incorrect_client(self):
+        """Default init behaviour won't accept inconsistent client.
+
+        If the client provided on init is not an instance of the type
+        assigned to _client_class an exception will be raised.
+        """
+        self.assertRaises(
+            TypeError,
+            self.concrete_class,
+            client=mock.Mock()
+        )
+
+
 class TestFunctions(unittest.TestCase):
 
     def test_operation_is_multipage__true(self):
