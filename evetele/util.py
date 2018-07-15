@@ -40,6 +40,10 @@ def exception_logger(cls, inst, traceback):
 sys.excepthook = exception_logger
 
 
+def get_utc_datetime():
+    return datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
+
+
 def parse_date(obj):
     """Convert a date-like object into a Python date object.
 
