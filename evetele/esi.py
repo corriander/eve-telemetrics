@@ -5,7 +5,7 @@ import itertools
 import esipy
 
 import evetele
-from .util import cached_property
+from evetele.util import cached_property
 
 
 USER_AGENT_STRING = '{} {} ({})'.format(
@@ -49,6 +49,35 @@ class ESIClient(object):
         # De-couples the EsiApp instance from things that want an op,
         # principally makes things easier to test/mock.
         return self._app.op[endpoint]
+
+    def fetch(self, endpoint, **kwargs):
+        """Fetch data from the specified endpoint.
+
+        Parameters
+        ----------
+
+        endpoint : str
+            Swagger endpoint descriptor.
+
+        Any keyword arguments are used as parameters in the request.
+
+        Returns
+        -------
+
+        variable
+            Data is returned directly from the API and depends on the
+            endpoint.
+        """
+        operation = self._get_op(endpoint)
+        if operation_is_multipage(operation):
+            # Change type of request params to operation
+            req_resp_list = self.multipage_request(endpoint, **kwargs)
+            data_generator = (pair[1].data for pair in req_resp_list)
+            return list(itertools.chain(*data_generator))
+
+        else:
+            resp = self.request(endpoint, **kwargs)
+            return resp.data
 
     def request(self, endpoint, **kwargs):
         """Construct and perform a request.
@@ -103,3 +132,10 @@ class ESIClient(object):
 
         else:
             raise self.BadResponse(response)
+
+
+def operation_is_multipage(op):
+    """Identify whether operation has a page parameter."""
+    # This is a bit magic and touches pyswagger internals.
+    return 'page' in [getattr(param, '$ref').split('/')[-1]
+                      for param in op.parameters]
