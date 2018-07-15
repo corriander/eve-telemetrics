@@ -196,5 +196,12 @@ class ESIClientWrapper(metaclass=abc.ABCMeta):
 def operation_is_multipage(op):
     """Identify whether operation has a page parameter."""
     # This is a bit magic and touches pyswagger internals.
-    return 'page' in [getattr(param, '$ref').split('/')[-1]
-                      for param in op.parameters]
+    return 'page' in [_get_parameter_name(p) for p in op.parameters]
+
+
+def _get_parameter_name(parameter):
+    # Given a pyswagger Parameter, identify the parameter name.
+    name = getattr(parameter, 'name')
+    if name is None:
+        name = getattr(parameter, '$ref').split('/')[-1]
+    return name

@@ -161,6 +161,32 @@ class TestFunctions(unittest.TestCase):
     def test_operation_is_multipage__true(self):
         """Checks the operation for a 'page' parameter.
 
+        This assumes a parameter object that has a proper name
+        attribute which isn't always the case.
+        """
+        mock_parameter = mock.Mock()
+        mock_parameter.name = 'page' # Gotcha; name on init fails.
+        mock_operation = mock.Mock(parameters=[mock_parameter])
+        self.assertTrue(esi.operation_is_multipage(mock_operation))
+
+    def test_operation_is_multipage__false(self):
+        """Checks the operation for a 'page' parameter.
+
+        This assumes a parameter object that has a proper name
+        attribute which isn't always the case.
+        """
+        mock_parameter = mock.Mock()
+        mock_parameter.name = 'region_id'
+        mock_operation = mock.Mock(parameters=[mock_parameter])
+        self.assertFalse(esi.operation_is_multipage(mock_operation))
+
+    def test_operation_is_multipage__no_name__true(self):
+        """Checks the operation for a 'page' parameter.
+
+        Not all parameter objects seem to end up with proper keys, in
+        which case this method needs to revert to deriving the
+        parameter name from the URI.
+
         This is unfortunately a bit black magic because it messes
         around with pyswagger operation internals. To check that the
         library still works as we expect it to here we'd probably need
@@ -169,19 +195,21 @@ class TestFunctions(unittest.TestCase):
         initialisation.
         """
         mock_parameter = mock.Mock()
+        mock_parameter.name = None
         setattr(mock_parameter,
                 '$ref',
                 'https://blah.com#/parameters/page')
         mock_operation = mock.Mock(parameters=[mock_parameter])
         self.assertTrue(esi.operation_is_multipage(mock_operation))
 
-    def test_operation_is_multipage__false(self):
+    def test_operation_is_multipage__no_name__false(self):
         """Checks the operation for a 'page' parameter.
 
-        See comment on test_operation_is_multipage__true() about
-        integration.
+        See comments on test_operation_is_multipage__no_name__true()
+        about inconsistent parameter objects and integration.
         """
         mock_parameter = mock.Mock()
+        mock_parameter.name = None
         setattr(mock_parameter,
                 '$ref',
                 'https://blah.com#/parameters/region_id')
