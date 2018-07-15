@@ -159,7 +159,7 @@ class ESIClientWrapper(metaclass=abc.ABCMeta):
                     "`client` init argument must be an instance of "
                     "{}.".format(self._client_class.__name__)
                 )
-                self._client = client
+            self._client = client
 
     @abc.abstractproperty
     def _client_class(self):

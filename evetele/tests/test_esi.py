@@ -132,13 +132,16 @@ class TestESIClientWrapper(unittest.TestCase):
         _client_class, it'll be used (saving the need to instantiate
         multiple client objects).
         """
+        mock_client = mock.Mock(spec=esi.ESIClient)
         try:
-            self.concrete_class(client=mock.Mock(spec=esi.ESIClient))
+            inst = self.concrete_class(client=mock_client)
         except:
             raise AssertionError(
                 "Failed to instantiate a concrete ESIClientWrapper "
                 "with an appropriate client."
             )
+        else:
+            self.assertIs(inst._client, mock_client)
 
     def test__provided___init___behaviour__incorrect_client(self):
         """Default init behaviour won't accept inconsistent client.
