@@ -6,9 +6,10 @@ from unittest import mock
 from .. import esi, util, market, trade
 
 from . import DATA_DIR
+from .test_esi import ESIClientWrapperTestCase
 
 
-class TestMarket(unittest.TestCase):
+class TestMarket(ESIClientWrapperTestCase):
     """Exercises the market store.
 
     The role of Market is as a snapshot cache which provides a method
@@ -20,6 +21,7 @@ class TestMarket(unittest.TestCase):
     re-use but the class can be re-instantiated into separate objects
     if appropriate.
     """
+    _sut_class = market.Market
 
     @classmethod
     def setUpClass(cls):
@@ -28,11 +30,6 @@ class TestMarket(unittest.TestCase):
         with open(os.path.join(DATA_DIR, 'esi_sell_order.json')) as f:
             sell_order = json.load(f)
         cls.order_data_list = [buy_order, sell_order]
-
-    def setUp(self):
-        self.mock_client = mock.Mock(spec=esi.ESIClient)
-        self.sut = market.Market(client=self.mock_client)
-        self.sut.fetch = mock.Mock()
 
     @staticmethod
     def get_type_list(market_obj, region_id, system_id, location_id,

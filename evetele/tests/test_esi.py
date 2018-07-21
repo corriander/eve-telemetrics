@@ -1,9 +1,14 @@
+import abc
+import json
+import os
 import unittest
 from unittest import mock
 
 import pyswagger
 
-from evetele import esi
+from .. import esi
+
+from . import DATA_DIR
 
 
 class TestESIClient(unittest.TestCase):
@@ -107,23 +112,70 @@ class TestESIClient(unittest.TestCase):
         self.assertIs(retval, response)
 
 
-class TestESIClientWrapper(unittest.TestCase):
+class ESIClientWrapperTestCase(unittest.TestCase,
+                               metaclass=abc.ABCMeta):
+    """Handles boilerplate for testing ESI client wrapper classes.
+
+    Provides a mock client and mocks the fetch method for convenience.
+    Concrete test case classes must specify the client wrapper class
+    under test. A pre-instantiated example of the wrapper class is
+    also provided.
+
+    Where the wrapped client type is SecureESIClient, dummy api_info
+    is provided
+    """
+
+    @abc.abstractproperty
+    def _sut_class(self):
+        # Class of system under test
+        return object
+
+    @property
+    def sample_api_info(self):
+        try:
+            return self._sample_api_info
+        except AttributeError:
+            raise NotImplementedError("Only implemented where {} is "
+                                      "being wrapped."
+                                      .format(esi.SecureESIClient))
+
+    def setUp(self):
+        cls = self._sut_class
+        self.mock_client = mock.Mock(spec=cls._client_class)
+        self.sut = cls(client=self.mock_client)
+        self.sut.fetch = mock.Mock()
+
+        # Add an api_info dict as per esipy examples.
+        if issubclass(cls._client_class, esi.SecureESIClient):
+            with open(os.path.join(DATA_DIR, 'api_info.json')) as f:
+                self._sample_api_info = api_info = json.load(f)
+            self.mock_client.get_api_info.return_value = api_info
+
+
+class TestESIClientWrapper(ESIClientWrapperTestCase):
     """This test suite exercises a simple concrete implementation."""
+    # It also demonstrates the base test case.
 
-    @classmethod
-    def setUpClass(cls):
-        class ConcreteClass(esi.ESIClientWrapper):
-            _client_class = esi.ESIClient
-        cls.concrete_class = ConcreteClass
-        cls.sut = ConcreteClass()
+    @property
+    def _sut_class(self):
+        try:
+            return self.__sut_class
+        except AttributeError:
+            class ConcreteClass(esi.ESIClientWrapper):
+                _client_class = esi.ESIClient
+                # We actually need to check an unmocked fetched here
+                # so we retain it.
+                fetch__real = esi.ESIClientWrapper.fetch
+            self.concrete_class = self.__sut_class = ConcreteClass
+            return self._sut_class
 
-    @mock.patch.object(esi.ESIClient, 'fetch')
-    def test_fetch(self, mock_wrapped_method):
+    def test_fetch(self):
         """Wraps the client fetch method properly."""
         args, kwargs = ('an_endpoint',), dict(param=1)
-        retval = self.sut.fetch(*args, **kwargs)
-        mock_wrapped_method.assert_called_with(*args, **kwargs)
-        self.assertIs(retval, mock_wrapped_method.return_value)
+        # Base test case overrides fetch, so we use our special copy.
+        retval = self.sut.fetch__real(*args, **kwargs)
+        self.mock_client.fetch.assert_called_with(*args, **kwargs)
+        self.assertIs(retval, self.mock_client.fetch.return_value)
 
     def test__provided___init___behaviour__correct_client(self):
         """Wrapper provides default init behaviour to accept a client.
