@@ -15,7 +15,14 @@ HUMAN_APP_NAME = 'EVE Telemetrics'
 SITE_CONFIG_DIR = appdirs.site_config_dir(appname=APP_NAME)
 LOCAL_CONFIG_DIR = os.path.join(os.path.dirname(__file__), '..',
                                 'config')
+
 USER_CONFIG_DIR = appdirs.user_config_dir(appname=APP_NAME)
+USER_DATA_DIR = appdirs.user_data_dir(appname=APP_NAME)
+
+# Ensure all of these exist.
+for _dir in USER_CONFIG_DIR, USER_DATA_DIR:
+    if not os.path.exists(_dir):
+        os.makedirs(_dir)
 
 
 class CustomConfigParser(configparser.ConfigParser):
