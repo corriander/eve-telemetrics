@@ -32,6 +32,9 @@ class cached_property(object):
             setattr(obj, self.iname, value)
             return value
 
+    def __set__(self, obj, value):
+        setattr(obj, self.iname, value)
+
 
 def exception_logger(cls, inst, traceback):
     # Log any unhandled exception.
