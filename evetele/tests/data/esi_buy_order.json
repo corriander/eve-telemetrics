@@ -1,0 +1,14 @@
+{
+    "duration": 90,
+    "is_buy_order": true,
+    "issued": "2018-07-13T20:03:36Z",
+    "location_id": 60005419,
+    "min_volume": 1,
+    "order_id": 5155530870,
+    "price": 597.72,
+    "range": "3",
+    "system_id": 30003411,
+    "type_id": 40,
+    "volume_remain": 23890,
+    "volume_total": 30000
+}

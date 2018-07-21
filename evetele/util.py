@@ -32,12 +32,19 @@ class cached_property(object):
             setattr(obj, self.iname, value)
             return value
 
+    def __set__(self, obj, value):
+        setattr(obj, self.iname, value)
+
 
 def exception_logger(cls, inst, traceback):
     # Log any unhandled exception.
     log.exception(': '.join([cls.__name__, str(inst)]))
     sys.__excepthook__(cls, inst, traceback)
 sys.excepthook = exception_logger
+
+
+def get_utc_datetime():
+    return datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
 
 
 def parse_date(obj):

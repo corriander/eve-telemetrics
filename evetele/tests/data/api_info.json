@@ -1,0 +1,10 @@
+{
+	"_comment": "Source of this example: https://kyria.github.io/EsiPy/examples/sso_login_esipy/",
+	"Scopes": "esi-wallet.read_character_wallet.v1",
+	"ExpiresOn": "2017-07-14T21:09:20",
+	"TokenType": "Character",
+	"CharacterName": "SOME Char",
+	"IntellectualProperty": "EVE",
+	"CharacterOwnerHash": "4raef4rea8aferfa+E=",
+	"CharacterID": 123456789
+}

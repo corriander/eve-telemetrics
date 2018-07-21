@@ -13,14 +13,7 @@ from ..trade import (SimpleMarketOrder, MarketOrderSnapshot,
                      VersionedMarketOrder)
 from ..util import parse_datetime, tdelta
 
-from . import DATA_DIR
-
-
-# Convenience shortcut for mocking properties.
-mock_property = functools.partial(
-    mock.patch.object,
-    new_callable=mock.PropertyMock
-)
+from . import DATA_DIR, mock_property
 
 
 class TestSimpleMarketOrder(unittest.TestCase):
