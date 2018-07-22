@@ -9,8 +9,9 @@ from unittest import mock
 import ddt
 import pyswagger
 
+from .. import place, static, trade
 from ..trade import (SimpleMarketOrder, MarketOrderSnapshot,
-                     VersionedMarketOrder)
+                     VersionedMarketOrder, TradeItem)
 from ..util import parse_datetime, tdelta
 
 from . import DATA_DIR, mock_property
@@ -120,6 +121,32 @@ class TestSimpleMarketOrder(unittest.TestCase):
         json_string = '{"a":  "fish"}'
         sut = SimpleMarketOrder.from_json(string=json_string)
         self.assertEqual(sut.json, json_string)
+
+    @mock.patch.object(place, 'Station')
+    def test_location(self, mock_class):
+        """Property value is a place.Station instance.
+
+        All orders are issued in a station indicated by the order's
+        location_id field. This property enriches that with
+        information pulled from static data.
+        """
+        sut = SimpleMarketOrder(data={'location_id': 1234})
+        retval = sut.location
+        mock_class.assert_called_with(1234)
+        self.assertIs(retval, mock_class.return_value)
+
+    @mock.patch.object(trade, 'TradeItem')
+    def test_item(self, mock_class):
+        """Property value is a TradeItem instance.
+
+        All orders are associated with a tradeable item type via the
+        type_id field. This property enriches that with information
+        pulled from static data.
+        """
+        sut = SimpleMarketOrder(data={'type_id': 34})
+        retval = sut.item
+        mock_class.assert_called_with(34)
+        self.assertIs(retval, mock_class.return_value)
 
     # ----------------------------------------------------------------
     # Magic Methods
@@ -359,6 +386,20 @@ class TestVersionedMarketOrder(unittest.TestCase):
         else:
             self.sut.add(**kwargs)
         self.assertIn(self.ts[0].isoformat(), self.sut.snapshots)
+
+
+class TestTradeItem(unittest.TestCase):
+
+    def test_integration__get_metadata__entity_param(self):
+        """The correct entity name should be passed on instantiation.
+        """
+        static.global_esd = mock.Mock(spec=type(static.global_esd))
+        static.global_esd.get_metadata.return_value = {}
+        TradeItem(-1)
+        static.global_esd.get_metadata.assert_called_once_with(
+            'market_type',
+            -1
+        )
 
 
 if __name__ == '__main__':

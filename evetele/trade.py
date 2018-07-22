@@ -2,7 +2,7 @@ import json
 
 import pyswagger
 
-from . import util
+from . import util, place, static
 from . import LoggingObject
 
 
@@ -57,6 +57,11 @@ class SimpleMarketOrder(LoggingObject):
         return self['duration']
 
     @property
+    def location(self):
+        """Location of market order (the station it was issued in)."""
+        return place.Station(self['location_id'])
+
+    @property
     def expiry(self):
         """Expiry date and time of market order (in UTC)."""
         return self.issued + util.tdelta(days=self.duration)
@@ -77,6 +82,11 @@ class SimpleMarketOrder(LoggingObject):
                 return util.parse_epoch_timestamp(timestamp)
             except ValueError:
                 return util.parse_datetime(timestamp)
+
+    @property
+    def item(self):
+        """Trade item the market order is for."""
+        return TradeItem(self.data['type_id'])
 
     @util.cached_property
     def json(self):
@@ -197,3 +207,15 @@ class VersionedMarketOrder(MarketOrderSnapshot):
             raise TypeError("Unsupported parameter types.")
         self._validate_order_id(snapshot)
         self.snapshots[t.isoformat()] = snapshot
+
+
+class TradeItem(static.StaticEntity):
+    """Simple representation of a tradeable item type."""
+
+    _entity_name = 'market_type'
+    _id_field = 'typeID'
+    _name_field = 'typeName'
+    _table = 'invTypes'
+    _cache = {}
+
+

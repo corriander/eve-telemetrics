@@ -36,6 +36,25 @@ class cached_property(object):
         setattr(obj, self.iname, value)
 
 
+class ClassPropertyDescriptor(object):
+    # https://stackoverflow.com/a/5191224/8992969
+
+    def __init__(self, fget):
+        self.fget = fget
+        self.__doc__ = fget.__doc__
+
+    def __get__(self, obj, objtype=None):
+        if objtype is None:
+            objtype = type(obj)
+        return self.fget.__get__(obj, objtype)()
+
+
+def classproperty(method):
+    if not isinstance(method, (classmethod, staticmethod)):
+        method = classmethod(method)
+    return ClassPropertyDescriptor(method)
+
+
 def exception_logger(cls, inst, traceback):
     # Log any unhandled exception.
     log.exception(': '.join([cls.__name__, str(inst)]))

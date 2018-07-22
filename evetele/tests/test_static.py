@@ -2,9 +2,14 @@ import collections
 import unittest
 from unittest import mock
 
+import ddt
+
 from evetele import static
 
+from . import mock_property
 
+
+@ddt.ddt
 class TestEveStaticData(unittest.TestCase):
 
     sample_region_dict = {
@@ -117,6 +122,26 @@ class TestEveStaticData(unittest.TestCase):
             [{'id': 456, 'name': 'Mega Trade Hub'},
              {'id': 654, 'name': 'Lesser Trade Hub'}]
         )
+
+    @ddt.data(
+        ('region', 'regions'),
+        ('system', 'systems'),
+        ('station', 'stations'),
+        ('market_type', 'market_types')
+    )
+    @ddt.unpack
+    def test_get_metadata(self, entity_name, prop_name):
+        """Get metadata should invoke the right property."""
+        with mock_property(static.EveStaticData, prop_name) as stub:
+            dummy_data = expected = {'some': 'data'}
+            stub.return_value = {-1: dummy_data}
+            esd = static.EveStaticData()
+            retval = esd.get_metadata(entity_name, -1)
+            self.assertIs(retval, expected)
+
+
+# See test_place for test cases exercising the StaticEntity ABC via
+# concrete implementations.
 
 
 if __name__ == '__main__':
