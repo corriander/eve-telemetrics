@@ -32,9 +32,33 @@ class TestCharacter(ESIClientWrapperTestCase):
         self.assertEqual(self.sut.id,
                          self.sample_api_info['CharacterID'])
 
+    def test_historic_orders(self):
+        """A list of `SimpleMarketOrder` is built from an endpoint.
+
+        The endpoint is 'characters_character_id_orders_history'.
+        Unlike open orders, historic (expired/cancelled) orders are
+        static and it therefore makes no sense to annotate them with
+        time viewed.
+        """
+        self.sut.fetch.return_value = [{}, {}]
+
+        retval = self.sut.historic_orders()
+
+        # Check the fetch call is made properly
+        self.sut.fetch.assert_called_with(
+            endpoint='characters_character_id_orders_history',
+            character_id=self.sut.id
+        )
+
+        # We expect two SimpleMarketOrder objects to be returned.
+        self.assertIsInstance(retval, list)
+        self.assertEqual(len(retval), 2)
+        self.assertIsInstance(retval[0], trade.SimpleMarketOrder)
+        self.assertIsInstance(retval[1], trade.SimpleMarketOrder)
+
     @mock.patch.object(character.util, 'get_utc_datetime')
     def test_open_orders(self, stub_now):
-        """A list of `MarketOrderSnapshot` is build from an endpoint.
+        """A list of `MarketOrderSnapshot` is built from an endpoint.
 
         The endpoint queried is 'characters_character_id_orders' and
         the time of the query is used to annotate the orders.

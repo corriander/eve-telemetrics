@@ -40,6 +40,19 @@ class Character(esi.ESIClientWrapper):
         self._name = api_info['CharacterName']
         self._id = api_info['CharacterID']
 
+    def historic_orders(self):
+        """Fetch expired/cancelled market orders for this character.
+
+        Returns
+        -------
+
+        list of trade.SimpleMarketOrder
+        """
+        return [trade.SimpleMarketOrder(d)
+                for d in self.fetch(
+                    endpoint='characters_character_id_orders_history',
+                    character_id=self.id)]
+
     def open_orders(self):
         """Fetch current market orders for this character.
 
