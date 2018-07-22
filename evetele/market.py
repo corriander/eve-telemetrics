@@ -69,4 +69,4 @@ class Market(esi.ESIClientWrapper):
         return region_node
 
 
-market = Market()
+global_market = Market()

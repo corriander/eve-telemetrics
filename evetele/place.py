@@ -4,47 +4,15 @@ import collections
 from . import static, util, market
 
 
-class _Location(metaclass=abc.ABCMeta):
-
-    esd = static.global_esd
-
-    def __new__(cls, ident):
-        # convert str or int ident -> int ID, and get or create inst
-        id_ = ident if isinstance(ident, int) else cls.get_id(ident)
-        try:
-            inst = cls._cache[id_]
-        except KeyError:
-            # Does not exist yet; create, assign metadata and cache.
-            # Class names are used to perform the entity lookup on
-            # EveStaticData instance.
-            inst = cls._cache[id_] = super().__new__(cls)
-            entity = cls.__name__.lower()
-            for k, v in cls.esd.get_metadata(entity, id_).items():
-                setattr(inst, k, v)
-        return inst
-
-    @abc.abstractproperty
-    def _cache(self):
-        return {}
-
-    @abc.abstractproperty
-    def _id_field(self):
-        return ''
+class _Location(static.StaticEntity):
 
     @abc.abstractproperty
     def _market_path(self):
         return
 
-    @abc.abstractproperty
-    def _name_field(self):
-        return ''
-
-    @abc.abstractproperty
-    def _table(self):
-        return ''
-
     @property
     def _market(self):
+        # Making this available on the class causes circ. dep. issues.
         return market.global_market
 
     @property
@@ -72,24 +40,6 @@ class _Location(metaclass=abc.ABCMeta):
         for type_id, order in descend(self.market_node):
             orders[type_id].append(order)
         return dict(orders)
-
-    @classmethod
-    def get_id(cls, name):
-        """Given a name, return the ID for an instance of this type.
-
-        This lookup is performed against the local SDE database and
-        uses configurable attributes on this class to define the
-        query.
-        """
-        record = cls.esd.db.query(
-            """
-            SELECT "{}"
-              FROM "{}"
-             WHERE "{}" = %s
-            """.format(cls._id_field, cls._table, cls._name_field),
-            (name,)
-        ).fetchone()
-        return getattr(record, cls._id_field)
 
 
 class Region(_Location):

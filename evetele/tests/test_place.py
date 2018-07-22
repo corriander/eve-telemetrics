@@ -21,7 +21,8 @@ class BaseTestCase(unittest.TestCase, metaclass=abc.ABCMeta):
     def setUpClass(cls):
         # At no point do we want or need a real EveStaticData instance
         # because it involves I/O.
-        place._Location.esd = mock.Mock()
+        cls.global_esd_orig = place.static.global_esd
+        place.static.global_esd = mock.Mock()
 
         def mock_metadata_getter(entity, id_=None):
             return {
@@ -31,7 +32,7 @@ class BaseTestCase(unittest.TestCase, metaclass=abc.ABCMeta):
                 'station': {'id': 9012, 'name': 'XYZ',
                             'region_id': 1234, 'system_id': 5678}
             }[entity]
-        place._Location.esd.get_metadata = mock_metadata_getter
+        place.static.global_esd.get_metadata = mock_metadata_getter
         cls.__example_metadata = mock_metadata_getter(
             cls._sut_class.__name__.lower())
 
@@ -41,6 +42,10 @@ class BaseTestCase(unittest.TestCase, metaclass=abc.ABCMeta):
         cls._market[1234][5678][9013][35] = [5, 6]
         cls._market[1234][5679][9014][36] = [7, 8]
 
+    @classmethod
+    def tearDownClass(cls):
+        place.static.global_esd = cls.global_esd_orig
+
     def setUp(self):
         self.sut = self._sut_class(self._example_metadata['id'])
 
@@ -48,10 +53,14 @@ class BaseTestCase(unittest.TestCase, metaclass=abc.ABCMeta):
 class TestRegion(BaseTestCase):
     """Exercise the Region concrete class and default behaviour.
 
-    `_Location` is an abstract base class providing a mandated
-    interface and some common behaviour for all subtypes. This test
-    suite doubles up exercising the Region concrete [sub]class and the
-    default behaviour.
+    `_Location` is an abstract base class extending
+    `static.StaticEntity` providing a mandated interface and some
+    common behaviour for all subtypes. This test suite doubles up
+    exercising the Region concrete [sub]class and the default
+    behaviour.
+
+    Because `StaticEntity`'s defined interface was originally
+    implemented here, this test case exercises that behaviour.
     """
 
     _sut_class = place.Region
@@ -128,7 +137,7 @@ class TestRegion(BaseTestCase):
         This is default, base class behaviour but it relies on
         configuration in the concrete class.
         """
-        mock_esd = place.Region.esd
+        mock_esd = place.static.global_esd
         stub_record = mock.Mock(regionID=4321)
         stub_cursor = mock_esd.db.query.return_value
         stub_cursor.fetchone.return_value = mock.Mock(regionID=4321)
