@@ -35,6 +35,11 @@ class Character(esi.ESIClientWrapper):
             self._get_api_info()
             return self._id
 
+    @util.cached_property
+    def wallet(self):
+        """The characters wallet; access balance and journal."""
+        return Wallet(self)
+
     def _get_api_info(self):
         api_info = self._client.get_api_info()
         self._name = api_info['CharacterName']
@@ -69,3 +74,22 @@ class Character(esi.ESIClientWrapper):
         orders = [trade.MarketOrderSnapshot(d, t=now) for d in lst]
 
         return orders
+
+
+class Wallet(object):
+
+
+    def __init__(self, character):
+        self.character = character
+
+    def _fetch(self, endpoint):
+        return self.character.fetch(endpoint,
+                                    character_id=self.character.id)
+
+    def fetch_balance(self):
+        """Fetch wallet balance."""
+        return self._fetch('characters_character_id_wallet')
+
+    def fetch_journal(self):
+        """Fetch a list of wallet journal record dictionaries."""
+        return self._fetch('characters_character_id_wallet_journal')

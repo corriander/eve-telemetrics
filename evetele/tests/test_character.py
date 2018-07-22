@@ -81,5 +81,39 @@ class TestCharacter(ESIClientWrapperTestCase):
         self.assertIsInstance(retval[1], trade.MarketOrderSnapshot)
 
 
+class TestWallet(unittest.TestCase):
+    """Simple class composed of a back reference to a character."""
+
+    def test_fetch_balance(self):
+        """Correct endpoint is queried via the character's client.
+
+        The endpoint is 'characters_character_id_wallet'.
+        """
+        mock_character = mock.Mock(spec=character.Character)
+        mock_character.fetch.return_value = 42
+        wallet = character.Wallet(mock_character)
+
+        self.assertEqual(wallet.fetch_balance(), 42)
+        mock_character.fetch.assert_called_with(
+            'characters_character_id_wallet',
+            character_id=mock_character.id
+        )
+
+    def test_fetch_journal(self):
+        """Correct endpoint is queried via the character's client.
+
+        The endpoint is 'characters_character_id_wallet_journal'.
+        """
+        mock_character = mock.Mock(spec=character.Character)
+        mock_character.fetch.return_value = [{}, {}]
+        wallet = character.Wallet(mock_character)
+
+        self.assertEqual(wallet.fetch_journal(), [{}, {}])
+        mock_character.fetch.assert_called_with(
+            'characters_character_id_wallet_journal',
+            character_id=mock_character.id
+        )
+
+
 if __name__ == '__main__':
     unittest.main()
