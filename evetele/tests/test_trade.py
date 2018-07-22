@@ -9,6 +9,7 @@ from unittest import mock
 import ddt
 import pyswagger
 
+from .. import place
 from ..trade import (SimpleMarketOrder, MarketOrderSnapshot,
                      VersionedMarketOrder)
 from ..util import parse_datetime, tdelta
@@ -120,6 +121,20 @@ class TestSimpleMarketOrder(unittest.TestCase):
         json_string = '{"a":  "fish"}'
         sut = SimpleMarketOrder.from_json(string=json_string)
         self.assertEqual(sut.json, json_string)
+
+    @mock.patch.object(place, 'Station')
+    def test_location(self, mock_class):
+        """Property value is a place.Station instance.
+
+        All orders are issued in a station indicated by the order's
+        location_id field. This property enriches that with
+        information pulled from static data.
+        """
+        sut = SimpleMarketOrder(data={'location_id': 1234})
+        retval = sut.location
+        mock_class.assert_called_with(1234)
+        self.assertIs(retval, mock_class.return_value)
+
 
     # ----------------------------------------------------------------
     # Magic Methods

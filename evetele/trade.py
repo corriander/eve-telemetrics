@@ -2,7 +2,7 @@ import json
 
 import pyswagger
 
-from . import util
+from . import util, place
 from . import LoggingObject
 
 
@@ -55,6 +55,11 @@ class SimpleMarketOrder(LoggingObject):
     def duration(self):
         """Duration of market order (in days)."""
         return self['duration']
+
+    @property
+    def location(self):
+        """Location of market order (the station it was issued in)."""
+        return place.Station(self['location_id'])
 
     @property
     def expiry(self):
