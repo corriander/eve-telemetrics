@@ -93,8 +93,14 @@ class TestSimpleMarketOrder(unittest.TestCase):
         self.assertEqual(self.sut.expiry, expected)
 
     @mock_property(SimpleMarketOrder, 'data')
+    def test_id(self, stub_data):
+        """Proxy for the order ID."""
+        stub_data.return_value = {'order_id': 123456789}
+        self.assertEqual(self.sut.id, 123456789)
+
+    @mock_property(SimpleMarketOrder, 'data')
     def test_issued(self, stub_data):
-        """Alias for the data item.
+        """Proxy for the data field 'issued'.
 
         Timestamps in the data are stored as milliseconds since the
         epoch. The issued property converts these to a UTC datetime.
@@ -108,6 +114,19 @@ class TestSimpleMarketOrder(unittest.TestCase):
             self.sut.issued,
             parse_datetime('20180624000500+0000')
         )
+
+    @mock.patch.object(trade, 'TradeItem')
+    def test_item(self, mock_class):
+        """Property value is a TradeItem instance.
+
+        All orders are associated with a tradeable item type via the
+        type_id field. This property enriches that with information
+        pulled from static data.
+        """
+        sut = SimpleMarketOrder(data={'type_id': 34})
+        retval = sut.item
+        mock_class.assert_called_with(34)
+        self.assertIs(retval, mock_class.return_value)
 
     def test_json__derived_from_data(self):
         """When instantiated with data, JSON is derived."""
@@ -133,19 +152,6 @@ class TestSimpleMarketOrder(unittest.TestCase):
         sut = SimpleMarketOrder(data={'location_id': 1234})
         retval = sut.location
         mock_class.assert_called_with(1234)
-        self.assertIs(retval, mock_class.return_value)
-
-    @mock.patch.object(trade, 'TradeItem')
-    def test_item(self, mock_class):
-        """Property value is a TradeItem instance.
-
-        All orders are associated with a tradeable item type via the
-        type_id field. This property enriches that with information
-        pulled from static data.
-        """
-        sut = SimpleMarketOrder(data={'type_id': 34})
-        retval = sut.item
-        mock_class.assert_called_with(34)
         self.assertIs(retval, mock_class.return_value)
 
     # ----------------------------------------------------------------

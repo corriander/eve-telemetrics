@@ -57,6 +57,11 @@ class SimpleMarketOrder(LoggingObject):
         return self['duration']
 
     @property
+    def id(self):
+        """Order ID."""
+        return self.data['order_id']
+
+    @property
     def location(self):
         """Location of market order (the station it was issued in)."""
         return place.Station(self['location_id'])
