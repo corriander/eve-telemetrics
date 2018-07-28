@@ -35,10 +35,28 @@ class Character(esi.ESIClientWrapper):
             self._get_api_info()
             return self._id
 
+    @util.cached_property
+    def wallet(self):
+        """The characters wallet; access balance and journal."""
+        return Wallet(self)
+
     def _get_api_info(self):
         api_info = self._client.get_api_info()
         self._name = api_info['CharacterName']
         self._id = api_info['CharacterID']
+
+    def historic_orders(self):
+        """Fetch expired/cancelled market orders for this character.
+
+        Returns
+        -------
+
+        list of trade.SimpleMarketOrder
+        """
+        return [trade.SimpleMarketOrder(d)
+                for d in self.fetch(
+                    endpoint='characters_character_id_orders_history',
+                    character_id=self.id)]
 
     def open_orders(self):
         """Fetch current market orders for this character.
@@ -56,3 +74,57 @@ class Character(esi.ESIClientWrapper):
         orders = [trade.MarketOrderSnapshot(d, t=now) for d in lst]
 
         return orders
+
+
+
+class Wallet(object):
+    """Provides methods to fetch wallet data for a given character."""
+
+    def __init__(self, character):
+        """
+        Parameters
+        ----------
+
+        character : Character
+            The character to fetch wallet data for.
+        """
+        self.character = character
+
+    def _fetch(self, endpoint):
+        return self.character.fetch(endpoint,
+                                    character_id=self.character.id)
+
+    def balance(self):
+        """Fetch current wallet balance.
+
+        Returns
+        -------
+
+        float
+        """
+        return self._fetch('characters_character_id_wallet')
+
+    def journal(self):
+        """Fetch list of wallet journal records.
+
+        Note that the API limits journal history to 30 days.
+
+        Returns
+        -------
+
+        list of dict-like
+        """
+        return self._fetch('characters_character_id_wallet_journal')
+
+    def transactions(self):
+        """Fetch list of transactions.
+
+        Note that the API limits transaction history to 30 days.
+
+        Returns
+        -------
+
+        list of dict-like
+        """
+        return self._fetch('characters_character_id_wallet_'
+                           'transactions')
