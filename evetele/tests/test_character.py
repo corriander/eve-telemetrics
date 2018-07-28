@@ -89,27 +89,27 @@ class TestWallet(unittest.TestCase):
         mock_character.fetch.return_value = api_result
         return character.Wallet(mock_character)
 
-    def test_fetch_balance(self):
+    def test_balance(self):
         """Correct endpoint is queried via the character's client.
 
         The endpoint is 'characters_character_id_wallet'.
         """
         wallet = self._get_wallet(42)
 
-        self.assertEqual(wallet.fetch_balance(), 42)
+        self.assertEqual(wallet.balance(), 42)
         wallet.character.fetch.assert_called_with(
             'characters_character_id_wallet',
             character_id=wallet.character.id
         )
 
-    def test_fetch_journal(self):
+    def test_journal(self):
         """Correct endpoint is queried via the character's client.
 
         The endpoint is 'characters_character_id_wallet_journal'.
         """
         wallet = self._get_wallet([{}, {}])
 
-        self.assertEqual(wallet.fetch_journal(), [{}, {}])
+        self.assertEqual(wallet.journal(), [{}, {}])
         wallet.character.fetch.assert_called_with(
             'characters_character_id_wallet_journal',
             character_id=wallet.character.id

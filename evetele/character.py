@@ -76,25 +76,55 @@ class Character(esi.ESIClientWrapper):
         return orders
 
 
-class Wallet(object):
 
+class Wallet(object):
+    """Provides methods to fetch wallet data for a given character."""
 
     def __init__(self, character):
+        """
+        Parameters
+        ----------
+
+        character : Character
+            The character to fetch wallet data for.
+        """
         self.character = character
 
     def _fetch(self, endpoint):
         return self.character.fetch(endpoint,
                                     character_id=self.character.id)
 
-    def fetch_balance(self):
-        """Fetch wallet balance."""
+    def balance(self):
+        """Fetch current wallet balance.
+
+        Returns
+        -------
+
+        float
+        """
         return self._fetch('characters_character_id_wallet')
 
-    def fetch_journal(self):
-        """Fetch a list of wallet journal record dictionaries."""
+    def journal(self):
+        """Fetch list of wallet journal records.
+
+        Note that the API limits journal history to 30 days.
+
+        Returns
+        -------
+
+        list of dict-like
+        """
         return self._fetch('characters_character_id_wallet_journal')
 
     def transactions(self):
-        """Fetch a list of transaction records."""
+        """Fetch list of transactions.
+
+        Note that the API limits transaction history to 30 days.
+
+        Returns
+        -------
+
+        list of dict-like
+        """
         return self._fetch('characters_character_id_wallet_'
                            'transactions')
