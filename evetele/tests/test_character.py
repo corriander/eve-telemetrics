@@ -84,19 +84,22 @@ class TestCharacter(ESIClientWrapperTestCase):
 class TestWallet(unittest.TestCase):
     """Simple class composed of a back reference to a character."""
 
+    def _get_wallet(self, api_result):
+        mock_character = mock.Mock(spec=character.Character)
+        mock_character.fetch.return_value = api_result
+        return character.Wallet(mock_character)
+
     def test_fetch_balance(self):
         """Correct endpoint is queried via the character's client.
 
         The endpoint is 'characters_character_id_wallet'.
         """
-        mock_character = mock.Mock(spec=character.Character)
-        mock_character.fetch.return_value = 42
-        wallet = character.Wallet(mock_character)
+        wallet = self._get_wallet(42)
 
         self.assertEqual(wallet.fetch_balance(), 42)
-        mock_character.fetch.assert_called_with(
+        wallet.character.fetch.assert_called_with(
             'characters_character_id_wallet',
-            character_id=mock_character.id
+            character_id=wallet.character.id
         )
 
     def test_fetch_journal(self):
@@ -104,14 +107,25 @@ class TestWallet(unittest.TestCase):
 
         The endpoint is 'characters_character_id_wallet_journal'.
         """
-        mock_character = mock.Mock(spec=character.Character)
-        mock_character.fetch.return_value = [{}, {}]
-        wallet = character.Wallet(mock_character)
+        wallet = self._get_wallet([{}, {}])
 
         self.assertEqual(wallet.fetch_journal(), [{}, {}])
-        mock_character.fetch.assert_called_with(
+        wallet.character.fetch.assert_called_with(
             'characters_character_id_wallet_journal',
-            character_id=mock_character.id
+            character_id=wallet.character.id
+        )
+
+    def test_transactions(self):
+        """Correct endpoint is queried via the character's client.
+
+        The endpoint is 'characters_character_id_wallet_transactions'.
+        """
+        wallet = self._get_wallet([{}, {}])
+
+        self.assertEqual(wallet.transactions(), [{}, {}])
+        wallet.character.fetch.assert_called_with(
+            'characters_character_id_wallet_transactions',
+            character_id=wallet.character.id
         )
 
 

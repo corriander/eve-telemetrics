@@ -93,3 +93,8 @@ class Wallet(object):
     def fetch_journal(self):
         """Fetch a list of wallet journal record dictionaries."""
         return self._fetch('characters_character_id_wallet_journal')
+
+    def transactions(self):
+        """Fetch a list of transaction records."""
+        return self._fetch('characters_character_id_wallet_'
+                           'transactions')
